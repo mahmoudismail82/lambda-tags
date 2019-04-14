@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+
+import json
+import urllib
+import boto3
+import sys
+
+# Identify which tag key you would like to search
+#tag_key = 'All'
+tag_key = sys.argv[1]
+
+# Insert all regions you want to check in this list
+regions = ['ap-southeast-1', 
+'ap-southeast-2', 
+'us-east-1'
+#'us-east-2', 
+#'us-west-1', 
+#'us-west-2', 
+#'eu-west-1', 
+#'eu-west-2', 
+#'eu-west-3'
+] 
+
+def get_arnlist(client):
+    arnlist = []
+    int1 = 0
+    response = client.list_functions()
+    for i in response['Functions']:
+        arnlist.append(response['Functions'][int1]['FunctionArn'])
+        int1 += 1
+    return arnlist
+
+def get_lambda_tags(arnlist, client):
+    dict1 = {}
+    for arn in arnlist:
+        #print('########### ' + arn + ' ########### ')
+        response2 = client.list_tags(Resource=arn)
+        for j in response2['Tags']:
+            #print(j + ': ' + response2['Tags'][j])
+            #import pdb; pdb.set_trace()
+            dict1[arn]=response2['Tags']
+    #print('\n')
+    #print(dict1)
+    return dict1
+
+def display(lambda_tag):
+    for i in lambda_tag:
+        #print('FunctionArn: ' + i)
+        #import pdb; pdb.set_trace()
+        if tag_key == 'All' or tag_key == 'ALL' or tag_key == 'all':
+            print('FunctionArn ====== ' + i)
+            for j in lambda_tag[i]:
+                #print('FunctionArn: ' + i)
+                print(j + ': ' + lambda_tag[i][j])
+            print('')
+        elif tag_key in lambda_tag[i].keys():
+            #print('FunctionArn: ' + i + ' ====== ' + lambda_tag[i][tag_key])
+            print('FunctionArn ====== ' + i)
+            print(tag_key + ': ' + lambda_tag[i][tag_key] + '\n')
+    print('\n')
+    return
+    
+
+def handler():
+    print('########################################################')
+    print('This is a script to find a tag key for Lambda functions!')
+    print('########################################################\n')
+    for region in regions:
+        print('########### ' + region + ' ###########')
+        client = boto3.client('lambda', region_name = region)
+        lambda_tag = {}
+        arnlist = get_arnlist(client)
+        lambda_tag = get_lambda_tags(arnlist, client)
+        display(lambda_tag)    
+    return
+    #}
+
+print(sys.argv[1])
+handler()
